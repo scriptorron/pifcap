@@ -4,6 +4,8 @@ Fast Raspberry Pi image capturing software for Lucky Imaging.
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
+import os
+import os.path
 import pyqtgraph as pg
 
 import pifcap_ui
@@ -41,7 +43,7 @@ class MainWin(QtWidgets.QMainWindow):
                     'tip': '% of pixels allowed to be overexposed (for instance defective pixel)',
                 },
             ]},
-            {'name': 'camera hardware', 'type': 'group', 'childern': [
+            {'name': 'camera hardware', 'type': 'group', 'children': [
                 {
                     'name': 'do hardware specific adjustments', 'type': 'bool', 'value': True,
                     'tip': 'do adjustments for specific camera hardware',
@@ -61,9 +63,9 @@ class MainWin(QtWidgets.QMainWindow):
                     'tip': 'force camera restart after each exposure',
                 },
             ]},
-            {'name': 'recording', 'type': 'group', 'childern': [
+            {'name': 'recording', 'type': 'group', 'children': [
                 {
-                    'name': 'default folder', 'type': 'str', 'value': "~/Pictures",
+                    'name': 'default folder', 'type': 'str', 'value': os.path.join(os.path.expanduser("~"), "Pictures"),
                     'tip': 'default folder to store images',
                 },
             ]},
@@ -125,7 +127,7 @@ class MainWin(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def closeEvent(self, event):
         self.add_LogMessage("entering closeEvent", Severity="DEBUG")
-        self.Cam.close()
+        self.Cam.closeCamera()
         #self.Settings.save_QSettings()  # FIXME: activate this!
         # proceed with close
         event.accept()

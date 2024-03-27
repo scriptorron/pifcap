@@ -36,140 +36,161 @@ class CameraSettings:
         }
         self._is_newControls = True
         # make thread safe
-        self._AccessLock = threading.Lock()
+        self._AccessLock = QtCore.QMutex()
 
 
     @property
     def available_RawModes(self):
-        with self._AccessLock:
-            return self._RawModes
+        self._AccessLock.lock()
+        ret = self._RawModes
+        self._AccessLock.unlock()
+        return ret
 
     @available_RawModes.setter
     def available_RawModes(self, rms):
-        with self._AccessLock:
-            self._RawModes = rms
-            self.set_RawModeFromIdx(0)
+        self._AccessLock.lock()
+        self._RawModes = rms
+        self.set_RawModeFromIdx(0)
+        self._AccessLock.unlock()
 
     @property
     def RawMode(self):
-        with self._AccessLock:
-            rm = self._RawModes[self._selected_RawMode_idx]
+        self._AccessLock.lock()
+        rm = self._RawModes[self._selected_RawMode_idx]
+        self._AccessLock.unlock()
         return rm
 
     def set_RawModeFromIdx(self, idx):
         assert idx >= 0
         assert idx < len(self._RawModes)
-        with self._AccessLock:
-            if idx != self._selected_RawMode_idx:
-                self._selected_RawMode_idx = idx
-                self._is_newMode = True
-                self._camera_controls["ExposureTime"] = min(
-                    self._camera_controls["ExposureTime"],
-                    self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
-                )
-                self._camera_controls["ExposureTime"] = max(
-                    self._camera_controls["ExposureTime"],
-                    self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
-                )
-                self._camera_controls["AnalogueGain"] = min(
-                    self._camera_controls["AnalogueGain"],
-                    self._RawModes[self._selected_RawMode_idx]["max_AnalogueGain"]
-                )
-                self._camera_controls["AnalogueGain"] = max(
-                    self._camera_controls["AnalogueGain"],
-                    self._RawModes[self._selected_RawMode_idx]["min_AnalogueGain"]
-                )
-                self._is_newControls = True
+        self._AccessLock.lock()
+        if idx != self._selected_RawMode_idx:
+            self._selected_RawMode_idx = idx
+            self._is_newMode = True
+            self._camera_controls["ExposureTime"] = min(
+                self._camera_controls["ExposureTime"],
+                self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
+            )
+            self._camera_controls["ExposureTime"] = max(
+                self._camera_controls["ExposureTime"],
+                self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
+            )
+            self._camera_controls["AnalogueGain"] = min(
+                self._camera_controls["AnalogueGain"],
+                self._RawModes[self._selected_RawMode_idx]["max_AnalogueGain"]
+            )
+            self._camera_controls["AnalogueGain"] = max(
+                self._camera_controls["AnalogueGain"],
+                self._RawModes[self._selected_RawMode_idx]["min_AnalogueGain"]
+            )
+            self._is_newControls = True
+        self._AccessLock.unlock()
 
     @property
     def MaxExposureTime(self):
-        with self._AccessLock:
-            t = self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
+        self._AccessLock.lock()
+        t = self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
+        self._AccessLock.unlock()
         return t
 
     @property
     def MinExposureTime(self):
-        with self._AccessLock:
-            t = self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
+        self._AccessLock.lock()
+        t = self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
+        self._AccessLock.unlock()
         return t
 
     @property
     def MaxGain(self):
-        with self._AccessLock:
-            g = self._RawModes[self._selected_RawMode_idx]["max_AnalogueGain"]
+        self._AccessLock.lock()
+        g = self._RawModes[self._selected_RawMode_idx]["max_AnalogueGain"]
+        self._AccessLock.unlock()
         return g
 
     @property
     def MinGain(self):
-        with self._AccessLock:
-            g = self._RawModes[self._selected_RawMode_idx]["min_AnalogueGain"]
+        self._AccessLock.lock()
+        g = self._RawModes[self._selected_RawMode_idx]["min_AnalogueGain"]
+        self._AccessLock.unlock()
         return g
 
     @property
     def ExposureTime(self):
-        with self._AccessLock:
-            t = self._camera_controls["ExposureTime"] / 1e6
+        self._AccessLock.lock()
+        t = self._camera_controls["ExposureTime"] / 1e6
+        self._AccessLock.unlock()
         return t
 
     @ExposureTime.setter
     def ExposureTime(self, t):
         t_usec = int(round(1e6 * t))
-        with self._AccessLock:
-            t_usec = min(
-                t_usec,
-                self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
-            )
-            t_usec = max(
-                t_usec,
-                self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
-            )
-            if t_usec != self._camera_controls["ExposureTime"]:
-                self._camera_controls["ExposureTime"] = t_usec
-                self._is_newControls = True
+        self._AccessLock.lock()
+        t_usec = min(
+            t_usec,
+            self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
+        )
+        t_usec = max(
+            t_usec,
+            self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
+        )
+        if t_usec != self._camera_controls["ExposureTime"]:
+            self._camera_controls["ExposureTime"] = t_usec
+            self._is_newControls = True
+        self._AccessLock.unlock()
 
     @property
     def Gain(self):
-        with self._AccessLock:
-            g = self._camera_controls["AnalogueGain"]
+        self._AccessLock.lock()
+        g = self._camera_controls["AnalogueGain"]
+        self._AccessLock.unlock()
         return g
 
     @Gain.setter
     def Gain(self, g):
-        with self._AccessLock:
-            g = min(
-                g,
-                self._RawModes[self._selected_RawMode_idx]["max_AnalogueGain"]
-            )
-            g = max(
-                g,
-                self._RawModes[self._selected_RawMode_idx]["min_AnalogueGain"]
-            )
-            if g != self._camera_controls["AnalogueGain"]:
-                self._camera_controls["AnalogueGain"] = g
-                self._is_newControls = True
+        self._AccessLock.lock()
+        g = min(
+            g,
+            self._RawModes[self._selected_RawMode_idx]["max_AnalogueGain"]
+        )
+        g = max(
+            g,
+            self._RawModes[self._selected_RawMode_idx]["min_AnalogueGain"]
+        )
+        if g != self._camera_controls["AnalogueGain"]:
+            self._camera_controls["AnalogueGain"] = g
+            self._is_newControls = True
+        self._AccessLock.unlock()
 
     @property
     def is_newControls(self):
-        with self._AccessLock:
-            return self._is_newControls
+        self._AccessLock.lock()
+        ret = self._is_newControls
+        self._AccessLock.unlock()
+        return ret
 
     def reset_newControls(self):
-        with self._AccessLock:
-            self._is_newControls = False
+        self._AccessLock.lock()
+        self._is_newControls = False
+        self._AccessLock.unlock()
 
     @property
     def is_newMode(self):
-        with self._AccessLock:
-            return self._is_newMode
+        self._AccessLock()
+        ret = self._is_newMode
+        self._AccessLock.unlock()
+        return iret
 
     def reset_newMode(self):
-        with self._AccessLock:
-            self._is_newMode = False
+        self._AccessLock.lock()
+        self._is_newMode = False
+        self._AccessLock.unlock()
 
     @property
     def camera_controls(self):
-        with self._AccessLock:
-            return self._camera_controls
+        self._AccessLock.lock()
+        ret = self._camera_controls
+        self._AccessLock.unlock()
+        return ret
 
     def __str__(self):
         return f'CameraSettings: RawMode={self.RawMode}, CameraControls={self.camera_controls}'
@@ -222,29 +243,32 @@ class ImageRecorder:
         self._ImagesToRecord = 0
         self._ImagesRecorded = 0
         self._Record = False
-        self._SettingsLock = threading.Lock()
+        self._SettingsLock = QtCore.QMutex()
         self._Ext = ".pfc"
 
     def set_RecordingSettings(self, Folder, Prefix, Comment, ImagesToRecord):
-        with self._SettingsLock:
-            self._Folder = Folder
-            self._Prefix = Prefix
-            self._Comment = Comment
-            self._ImagesToRecord = ImagesToRecord
+        self._SettingsLock.lock()
+        self._Folder = Folder
+        self._Prefix = Prefix
+        self._Comment = Comment
+        self._ImagesToRecord = ImagesToRecord
+        self._SettingsLock.unlock()
 
     def Recording(self, Record):
-        with self._SettingsLock:
-            self._Record = Record
-            if Record:
-                self._ImagesRecorded = 0
+        self._SettingsLock.lock()
+        self._Record = Record
+        if Record:
+            self._ImagesRecorded = 0
+        self._SettingsLock.unlock()
 
     def _mk_Image(self, array, metadata):
-        with self._SettingsLock:
-            Img = {
-                "array": array,
-                "metadata": metadata,
-                "comment": self._Comment
-            }
+        self._SettingsLock.lock()
+        Img = {
+            "array": array,
+            "metadata": metadata,
+            "comment": self._Comment
+        }
+        self._SettingsLock.unlock()
         return Img
 
     def _estimate_FileSize(self, Img):
@@ -252,15 +276,17 @@ class ImageRecorder:
 
     def on_Image(self, array, metadata):
         Img = self._mk_Image(array=array, metadata=metadata)
-        with self._SettingsLock:
-            Record = self._Record
-            ImagesRemain = self._ImagesToRecord - self._ImagesRecorded
-            Folder = self._Folder
+        self._SettingsLock.lock()
+        Record = self._Record
+        ImagesRemain = self._ImagesToRecord - self._ImagesRecorded
+        Folder = self._Folder
+        self._SettingsLock.unlock()
         if Record and (ImagesRemain > 0):
             TimeStamp = datetime.datetime.now().strftime("%y%m%dT%H%M%S%f")[:16]
-            with self._SettingsLock:
-                FileName = os.path.join(Folder, f'{self._Prefix}-{TimeStamp}{self._Ext}')
-                self._ImagesRecorded += 1
+            self._SettingsLock.lock()
+            FileName = os.path.join(Folder, f'{self._Prefix}-{TimeStamp}{self._Ext}')
+            self._ImagesRecorded += 1
+            self._SettingsLock.unlock()
             with open(FileName, "wb") as fh:
                 pickle.dump(Img, fh)
         disc_total, disc_used, disc_free = shutil.disk_usage(Folder)
@@ -272,13 +298,14 @@ class ImageRecorder:
         }
 
 
-class CameraControl:
+class CameraControl(QtCore.QThread):
     """camera control and exposure thread
     """
 
     sigImage = QtCore.pyqtSignal(dict)
 
     def __init__(self, parent):
+        super().__init__(parent=parent)
         self.parent = parent
         # reset states
         self.picam2 = None
@@ -291,7 +318,6 @@ class CameraControl:
         # exposure loop in separate thread
         self.Sig_ActionExit.clear()
         self.Sig_CaptureDone.clear()
-        self.ExposureThread = None
         # handshake with GUI
         self.Sig_GiveImage = threading.Event()
         self.Sig_GiveImage.clear()
@@ -338,24 +364,21 @@ class CameraControl:
             self.needs_Restarts = self.CamProps["Model"] in ["imx290", "imx519"]
         # start exposure loop
         self.Sig_ActionExit.clear()
-        self.ExposureThread = threading.Thread(target=self.__ExposureLoop)
-        self.ExposureThread.start()
+        self.start()
 
     def is_Open(self):
         """return camera state
         """
-        return (self.picam2 is not None) and (self.ExposureThread is not None)
+        return (self.picam2 is not None) and self.isRunning()
 
     def closeCamera(self):
         """close camera
         """
         self.parent.log_Info('Closing camera.')
         # stop exposure loop
-        if self.ExposureThread is not None:
-            if self.ExposureThread.is_alive():
-                self.Sig_ActionExit.set()
-                self.ExposureThread.join()  # wait until exposure loop exits
-        self.ExposureThread = None
+        if self.isRunning():
+            self.Sig_ActionExit.set()
+            self.wait()  # wait until exposure loop exits
         # close picam2
         if self.picam2 is not None:
             if self.picam2.started:
@@ -368,7 +391,7 @@ class CameraControl:
 
 
     def reconfigure_Camera(self, RawMode, DoFastExposure=True):
-        self.parent.logInfo(f'reconfiguring camera')
+        self.parent.log_Info(f'reconfiguring camera')
         config = self.picam2.create_still_configuration(
             queue=DoFastExposure,
             buffer_count=2 if DoFastExposure else 1  # need at least 2 buffer for queueing
@@ -510,7 +533,7 @@ class CameraControl:
     def Recording(self, Record):
         self.ImageRecorder.Recording(Record)
 
-    def __ExposureLoop(self):
+    def run(self):
         """exposure loop
 
         Made to run in a separate thread.
