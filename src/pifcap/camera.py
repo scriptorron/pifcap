@@ -225,10 +225,11 @@ class ImageRecorder:
             self._ImagesRecorded = 0
         self._SettingsLock.unlock()
 
-    def _mk_Image(self, array, metadata):
+    def _mk_Image(self, array, metadata, format):
         self._SettingsLock.lock()
         Img = {
             "array": array,
+            "format": format,
             "metadata": metadata,
             "comment": self._Comment
         }
@@ -238,8 +239,8 @@ class ImageRecorder:
     def _estimate_FileSize(self, Img):
         return len(pickle.dumps(Img))
 
-    def on_Image(self, array, metadata):
-        Img = self._mk_Image(array=array, metadata=metadata)
+    def on_Image(self, array, metadata, format):
+        Img = self._mk_Image(array=array, metadata=metadata, format=format)
         self._SettingsLock.lock()
         Record = self._Record
         ImagesRemain = self._ImagesToRecord - self._ImagesRecorded
@@ -570,11 +571,15 @@ class CameraControl(QtCore.QThread):
                     'AnalogueGain', 'ScalerCrop', 'ExposureTime'
                 ]
             }
-            RecordingInfos = self.ImageRecorder.on_Image(array=array, metadata=metadata)
+            RecordingInfos = self.ImageRecorder.on_Image(
+                array=array, metadata=metadata, 
+                format=self.picam2.camera_configuration()["raw"]["format"]
+            )
             # send preview image to GUI
             if self.Sig_GiveImage.is_set():
                 self.sigImage.emit({
                     "array": array,
+                    "format": self.picam2.camera_configuration()["raw"]["format"],
                     "metadata": metadata,
                     "RecordingInfos": RecordingInfos,
                 })

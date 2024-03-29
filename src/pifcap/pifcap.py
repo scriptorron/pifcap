@@ -33,6 +33,9 @@ class MainWin(QtWidgets.QMainWindow):
         super(MainWin, self).__init__()
         # settings
         DefaultSettings = [
+            {'name': 'saturation limit', 'type': 'int', 'value': 90, 'limits': [0, 100], 'suffix': ' %',
+             'tip': 'mark saturationexposure when above % of full-scale',
+            },
             {'name': 'automatic exposure', 'type': 'group', 'children': [
                 {
                     'name': 'target exposure', 'type': 'int', 'value': 80, 'limits': [1, 100], 'suffix': ' %',
@@ -100,6 +103,8 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.lineEdit_FileNamePrefix.textChanged.connect(self.on_RecordingSettingsChanged)
         self.ui.spinBox_nImagesToRecord.valueChanged.connect(self.on_RecordingSettingsChanged)
         self.ui.doubleSpinBox_TimeLapse.valueChanged.connect(self.on_RecordingSettingsChanged)
+        # preview image
+        self.Img = None
 
     def add_LogMessage(self, Msg, Severity="INFO"):
         if Severity=="ERROR":
@@ -147,8 +152,10 @@ class MainWin(QtWidgets.QMainWindow):
             self.ui.groupBox_CameraSettings.setEnabled(False)
             print('DBG: vor StartRec.setEnabled')  # FIXME
             self.ui.pushButton_StartRec.setEnabled(False)
+            self.ui.comboBox_Camera.setEnabled(True)
         else:
             self.Cam.openCamera(self.ui.comboBox_Camera.currentIndex())
+            self.ui.comboBox_Camera.setEnabled(False)
             self.ui.comboBox_RawMode.clear()
             self.ui.comboBox_RawMode.addItems([rm["label"] for rm in self.Cam.CameraSettings.available_RawModes])
             self.ui.comboBox_RawMode.setCurrentIndex(0)
@@ -203,21 +210,109 @@ class MainWin(QtWidgets.QMainWindow):
     def on_Image(self, Img):
         print('DBG: GUI on_Image')
         self.ui.label_RecordingInfos.setText(
-            f'{Img["RecordingInfos"]["disc_free"]/1024/1024} MiB (~{Img["RecordingInfos"]["disc_free_images"]} images) free'
+            f'{Img["RecordingInfos"]["disc_free"]/1024/1024:.0f} MiB (~{Img["RecordingInfos"]["disc_free_images"]} images) free'
         )
         self.ui.label_RecordedImageCounter.setText(f'{Img["RecordingInfos"]["ImagesRecorded"]} images saved')
-        self.log_Debug(f'received image: {Img["array"].shape}, {Img["array"].dtype}')
+        self.log_Debug(f'received image: {Img["format"]}, {Img["array"].shape}, {Img["array"].dtype}')
         self.log_Debug(f'received metadata: {Img["metadata"]}')
-        #Img["array"]
-        #Img["metadata"]
+        self.Img = Img
+        self.process_Image()
         # TODO: wie wird Aufnahme automatisch gestoppt?
         print('DBG: start timer')  # FIXME
         QtCore.QTimer.singleShot(100, self.request_NewImage)
 
-
     def request_NewImage(self):
         print('DBG: Sig_GiveImage.set')  # FIXME
         self.Cam.Sig_GiveImage.set()
+
+    def process_Image(self):
+        format = self.Img["format"]
+        array = self.Img["array"]
+        # we expect uncompressed format here
+        if format.count("_") > 0:
+            raise NotImplementedError(f'got unsupported raw image format {format}')
+        if format[0] not in ["S", "R"]:
+            raise NotImplementedError(f'got unsupported raw image format {format}')
+        # Bayer or mono format
+        if format[0] == "S":
+            # Bayer pattern format
+            BayerPattern = format[1:5]
+            BayerPattern = self.parent.config.get("driver", "force_BayerOrder", fallback=BayerPattern)
+            bit_depth = int(format[5:])
+        else:
+            # mono format
+            BayerPattern = None
+            bit_depth = int(format[1:])
+        # left adjust if needed
+        if bit_depth > 8:
+            array = array.view(np.uint16)
+        else:
+            array = array.view(np.uint8)
+        #
+        # remove 0- or garbage-filled columns # TODO implement this?
+        #true_size = self.present_CameraSettings.RawMode["true_size"]
+        #array = array[0:true_size[1], 0:true_size[0]]
+        imgR = None
+        imgG1 = None
+        imgG2 = None
+        imgB = None
+        if BayerPattern is None:
+            # mono format
+            img = array
+        else:
+            Hier weiter machen!
+            BayerChannels = {
+                1: {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},  # GBRG
+                2: {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},  # GBRG
+                3: {"B": (0, 0), "G1": (0, 1), "G2": (1, 0), "R": (1, 1)},  # BGGR
+            }[BayerPattern]
+            imgR = imgBayer[BayerChannels["R"][0]::2, BayerChannels["R"][1]::2]
+            imgG1 = imgBayer[BayerChannels["G1"][0]::2, BayerChannels["G1"][1]::2]
+            imgG2 = imgBayer[BayerChannels["G2"][0]::2, BayerChannels["G2"][1]::2]
+            imgB = imgBayer[BayerChannels["B"][0]::2, BayerChannels["B"][1]::2]
+            RawPreviewMode = self.ui.comboBox_RawPreviewMode.currentText()
+            if RawPreviewMode == "luminance":
+                img = (0.2126 * imgR + 0.7152 * (imgG1 + imgG2) / 2 + 0.0722 * imgB + 0.5).astype(int)
+            elif RawPreviewMode == "red":
+                img = imgR
+            elif RawPreviewMode == "green 1":
+                img = imgG1
+            elif RawPreviewMode == "green 2":
+                img = imgG2
+            elif RawPreviewMode == "blue":
+                img = imgB
+            else:
+                raise NotImplementedError
+        # preview rotation and flip
+        Rot = self.ui.comboBox_PreviewRot.currentText()
+        if Rot != "0deg":
+            k = {"90deg": 3, "180deg": 2, "270deg": 1}[Rot]
+            img = np.rot90(img, k=k)
+        if self.ui.checkBox_PreviewFlipH.isChecked():
+            img = np.flipud(img)
+        if self.ui.checkBox_PreviewFlipV.isChecked():
+            img = np.fliplr(img)
+        # show preview image
+        self.ui.ImageView_Preview.setImage(img, autoLevels=False,
+                                            autoHistogramRange=False,
+                                            #levelMode="rgb",
+                                            autoRange=False,
+                                            )
+        # highlight saturated pixel
+        if self.ui.checkBox_Saturation.isChecked():
+            sat = np.zeros((img.shape[0], img.shape[1], 4), dtype=int)
+            sat[:, :, 0] = 1  # pure red, full transparent
+            satLim = (2**bit_depth) * self.Settings.get('saturation limit')
+            # FIXME: what about mono images?
+            if BayerPattern is None:
+                # mono image
+                is_sat = img > satLim
+            else:
+                is_sat = (imgR > satLim) | (imgG1 > satLim) | (imgG2 > satLim) | (imgB > satLim)
+            sat[:, :, 3] = is_sat * 1  # saturated pixel get intransparent red
+            self.SaturatedPixelImage.setImage(sat, levels=[[0, 1], [0, 1], [0, 1], [0, 1]])
+        else:
+            self.SaturatedPixelImage.clear()
 
     @QtCore.pyqtSlot()
     def on_pushButton_StartRec_clicked(self):
