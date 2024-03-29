@@ -109,8 +109,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>320</width>
-                <height>705</height>
+                <width>354</width>
+                <height>678</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -175,7 +175,23 @@
                    </widget>
                   </item>
                   <item row="2" column="1">
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_ExposureTime"/>
+                   <widget class="QDoubleSpinBox" name="doubleSpinBox_ExposureTime">
+                    <property name="suffix">
+                     <string> s</string>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                    <property name="maximum">
+                     <double>10000.000000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.010000000000000</double>
+                    </property>
+                    <property name="stepType">
+                     <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
+                    </property>
+                   </widget>
                   </item>
                   <item row="2" column="2">
                    <widget class="QPushButton" name="pushButton_OptimizeExposure">
@@ -373,7 +389,7 @@
                   <item row="3" column="0" colspan="7">
                    <widget class="QLabel" name="label_RecordingInfos">
                     <property name="text">
-                     <string> </string>
+                     <string/>
                     </property>
                    </widget>
                   </item>
@@ -439,7 +455,7 @@
      <x>0</x>
      <y>0</y>
      <width>1170</width>
-     <height>21</height>
+     <height>28</height>
     </rect>
    </property>
   </widget>

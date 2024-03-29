@@ -92,6 +92,7 @@ class MainWin(QtWidgets.QMainWindow):
         # camera
         self.Cam = camera.CameraControl(parent=self)
         self.Cam.sigImage.connect(self.on_Image)
+        print('DBG: __init__ Sig_GiveImage.set')  # FIXME
         self.Cam.Sig_GiveImage.set()
         self.ui.comboBox_Camera.addItems(self.Cam.get_Cameras())
         # recording settings
@@ -200,6 +201,7 @@ class MainWin(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(dict)
     def on_Image(self, Img):
+        print('DBG: GUI on_Image')
         self.ui.label_RecordingInfos.setText(
             f'{Img["RecordingInfos"]["disc_free"]/1024/1024} MiB (~{Img["RecordingInfos"]["disc_free_images"]} images) free'
         )
@@ -209,6 +211,12 @@ class MainWin(QtWidgets.QMainWindow):
         #Img["array"]
         #Img["metadata"]
         # TODO: wie wird Aufnahme automatisch gestoppt?
+        print('DBG: start timer')  # FIXME
+        QtCore.QTimer.singleShot(100, self.request_NewImage)
+
+
+    def request_NewImage(self):
+        print('DBG: Sig_GiveImage.set')  # FIXME
         self.Cam.Sig_GiveImage.set()
 
     @QtCore.pyqtSlot()

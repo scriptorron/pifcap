@@ -284,6 +284,7 @@ class CameraControl(QtCore.QThread):
         self.Sig_CaptureDone.clear()
         # handshake with GUI
         self.Sig_GiveImage = threading.Event()
+        print('DBG: __init__ Sig_GiveImage.clear')  # FIXME
         self.Sig_GiveImage.clear()
         # image recorder
         self.ImageRecorder = ImageRecorder(Folder=parent.Settings.get('recording', 'default folder'))
@@ -562,6 +563,13 @@ class CameraControl(QtCore.QThread):
                 # in normal exposure mode the camera needs to be started with exposure command
                 self.picam2.stop()
             # save image
+            metadata = {
+                k: metadata.get(k, None) 
+                for k in [
+                    'SensorBlackLevels', 'Lux', 'FrameDuration', 'DigitalGain',
+                    'AnalogueGain', 'ScalerCrop', 'ExposureTime'
+                ]
+            }
             RecordingInfos = self.ImageRecorder.on_Image(array=array, metadata=metadata)
             # send preview image to GUI
             if self.Sig_GiveImage.is_set():
@@ -570,6 +578,7 @@ class CameraControl(QtCore.QThread):
                     "metadata": metadata,
                     "RecordingInfos": RecordingInfos,
                 })
+                print('DBG: Sig_GiveImage.clear')  # FIXME
                 self.Sig_GiveImage.clear()
 
 
