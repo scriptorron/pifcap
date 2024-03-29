@@ -199,42 +199,6 @@ class CameraSettings:
         return str(self)
 
 
-def getLocalFileName(dir: str = ".", prefix: str = "Image_XXX", suffix: str = ".fits"):
-    """make image name for local storage
-
-    Valid placeholder in prefix are:
-        _XXX: 3 digit image count
-        _ISO8601: local time
-
-    Args:
-        dir: local directory, will be created if not existing
-        prefix: file name prefix with placeholders
-        suffix: file name suffix
-
-    Returns:
-        path and file name with placeholders dissolved
-    """
-    os.makedirs(dir, exist_ok=True)
-    # replace ISO8601 placeholder in prefix with current time
-    now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-    prefix_now = prefix.replace("_ISO8601", f"_{now}")
-    # find largest existing image index
-    maxidx = 0
-    patternstring = prefix_now.replace("_XXX", "_(?P<Idx>\d{3})", 1) + suffix
-    patternstring = patternstring.replace(".", "\.")
-    pattern = re.compile(patternstring)
-    for fn in os.listdir(dir):
-        match = pattern.fullmatch(fn)
-        if match:
-            if "Idx" in match.groupdict():
-                idx = int(match.group("Idx"))
-                maxidx = max(maxidx, idx)
-    #
-    maxidx += 1
-    filename = prefix_now.replace("_XXX",f"_{maxidx:03d}", 1) + suffix
-    return os.path.join(dir, filename)
-
-
 class ImageRecorder:
     def __init__(self):
         self._Folder = ""
@@ -328,7 +292,7 @@ class CameraControl(QtCore.QThread):
         """return list of available cameras"""
         cameras = Picamera2.global_camera_info()
         # use Id as unique camera identifier
-        return [c["Id"] for c in cameras]
+        return [c["Model"] for c in cameras]
 
     def openCamera(self, idx: int):
         """open camera with given index idx
@@ -415,6 +379,7 @@ class CameraControl(QtCore.QThread):
         sensor_modes = self.picam2.sensor_modes
         raw_modes = []
         for sensor_mode in sensor_modes:
+            print(f'DBG: {sensor_mode=}')  # FIXME
             # sensor_mode is dict
             # it must have key "format" (usually a packed data format) and can have
             # "unpacked" (unpacked data format)

@@ -100,6 +100,7 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.doubleSpinBox_TimeLapse.valueChanged.connect(self.on_RecordingSettingsChanged)
 
     def add_LogMessage(self, Msg, Severity="INFO"):
+        print(f'DBG: {Severity=}, {Msg=}')
         if Severity=="ERROR":
             Html = '<font color="red">ERROR: %s</font>' % Msg
         elif Severity=="WARN":
