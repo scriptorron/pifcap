@@ -92,6 +92,7 @@ class MainWin(QtWidgets.QMainWindow):
         # camera
         self.Cam = camera.CameraControl(parent=self)
         self.Cam.sigImage.connect(self.on_Image)
+        self.Cam.Sig_GiveImage.set()
         self.ui.comboBox_Camera.addItems(self.Cam.get_Cameras())
         # recording settings
         self.ui.lineEdit_ImageComment.textChanged.connect(self.on_RecordingSettingsChanged)
@@ -100,7 +101,6 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.doubleSpinBox_TimeLapse.valueChanged.connect(self.on_RecordingSettingsChanged)
 
     def add_LogMessage(self, Msg, Severity="INFO"):
-        print(f'DBG: {Severity=}, {Msg=}')
         if Severity=="ERROR":
             Html = '<font color="red">ERROR: %s</font>' % Msg
         elif Severity=="WARN":
@@ -136,24 +136,48 @@ class MainWin(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_pushButton_ConnectDisconnect_clicked(self):
         if self.Cam.is_Open():
+            print('DBG: vor Cam.closeCamera')  # FIXME
             self.Cam.closeCamera()
+            print('DBG: vor setText')  # FIXME
             self.ui.pushButton_ConnectDisconnect.setText("connect")
-            self.ui.comboBox_RawMode.clear()
+            print('DBG: vor RawMode.clear')  # FIXME
+            #self.ui.comboBox_RawMode.clear()
+            print('DBG: vor CameraSettings.setEnabled')  # FIXME
             self.ui.groupBox_CameraSettings.setEnabled(False)
+            print('DBG: vor StartRec.setEnabled')  # FIXME
             self.ui.pushButton_StartRec.setEnabled(False)
         else:
             self.Cam.openCamera(self.ui.comboBox_Camera.currentIndex())
-            self.ui.doubleSpinBox_ExposureTime.setMaximum(self.Cam.CameraSettings.max_ExposureTime)
-            self.ui.doubleSpinBox_ExposureTime.setMinimum(self.Cam.CameraSettings.min_ExposureTime)
-            self.ui.doubleSpinBox_ExposureTime.setValue(self.Cam.CameraSettings.ExposureTime)
-            self.ui.doubleSpinBox_Gain.setMaximum(self.Cam.CameraSettings.max_AnalogueGain)
-            self.ui.doubleSpinBox_Gain.setMinimum(self.Cam.CameraSettings.min_AnalogueGain)
-            self.ui.doubleSpinBox_Gain.setValue(self.Cam.CameraSettings.AnalogueGain)
+            self.ui.comboBox_RawMode.clear()
             self.ui.comboBox_RawMode.addItems([rm["label"] for rm in self.Cam.CameraSettings.available_RawModes])
             self.ui.comboBox_RawMode.setCurrentIndex(0)
             self.ui.pushButton_ConnectDisconnect.setText("disconnect")
             self.ui.groupBox_CameraSettings.setEnabled(True)
             self.ui.pushButton_StartRec.setEnabled(True)
+
+
+    @QtCore.pyqtSlot(int)
+    def on_comboBox_RawMode_currentIndexChanged(self, idx):
+        print(f'DBG: on_compoBox_RawMode_currentIndexChanged {idx}')
+        if idx >= 0:
+            self.Cam.CameraSettings.set_RawModeFromIdx(idx)
+            self.ui.doubleSpinBox_Gain.setMaximum(self.Cam.CameraSettings.MaxGain)
+            self.ui.doubleSpinBox_Gain.setMinimum(self.Cam.CameraSettings.MinGain)
+            self.ui.doubleSpinBox_Gain.setValue(self.Cam.CameraSettings.Gain)
+            self.ui.doubleSpinBox_ExposureTime.setMaximum(self.Cam.CameraSettings.MaxExposureTime)
+            self.ui.doubleSpinBox_ExposureTime.setMinimum(self.Cam.CameraSettings.MinExposureTime)
+            self.ui.doubleSpinBox_ExposureTime.setValue(self.Cam.CameraSettings.ExposureTime)
+
+
+    @QtCore.pyqtSlot(float)
+    def on_doubleSpinBox_ExposureTime_valueChanged(self, t):
+        print(f'DBG: on_doubleSpinBox_ExposureTime_valueChanged {t}')
+        self.Cam.CameraSettings.ExposureTime = t
+
+    @QtCore.pyqtSlot(float)
+    def on_doubleSpinBox_Gain_valueChanged(self, g):
+        print(f'DBG: on_doubleSpinBox_Gain_valueChanged {g}')
+        self.Cam.CameraSettings.Gain = g
 
     @QtCore.pyqtSlot()
     def on_pushButton_Folder_clicked(self):
@@ -185,6 +209,7 @@ class MainWin(QtWidgets.QMainWindow):
         #Img["array"]
         #Img["metadata"]
         # TODO: wie wird Aufnahme automatisch gestoppt?
+        self.Cam.Sig_GiveImage.set()
 
     @QtCore.pyqtSlot()
     def on_pushButton_StartRec_clicked(self):

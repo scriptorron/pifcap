@@ -50,8 +50,8 @@ class CameraSettings:
     def available_RawModes(self, rms):
         self._AccessLock.lock()
         self._RawModes = rms
-        self.set_RawModeFromIdx(0)
         self._AccessLock.unlock()
+        self.set_RawModeFromIdx(0)
 
     @property
     def RawMode(self):
@@ -91,14 +91,14 @@ class CameraSettings:
         self._AccessLock.lock()
         t = self._RawModes[self._selected_RawMode_idx]["max_ExposureTime"]
         self._AccessLock.unlock()
-        return t
+        return t / 1e6
 
     @property
     def MinExposureTime(self):
         self._AccessLock.lock()
         t = self._RawModes[self._selected_RawMode_idx]["min_ExposureTime"]
         self._AccessLock.unlock()
-        return t
+        return t / 1e6
 
     @property
     def MaxGain(self):
@@ -175,10 +175,10 @@ class CameraSettings:
 
     @property
     def is_newMode(self):
-        self._AccessLock()
+        self._AccessLock.lock()
         ret = self._is_newMode
         self._AccessLock.unlock()
-        return iret
+        return ret
 
     def reset_newMode(self):
         self._AccessLock.lock()
@@ -200,8 +200,8 @@ class CameraSettings:
 
 
 class ImageRecorder:
-    def __init__(self):
-        self._Folder = ""
+    def __init__(self, Folder):
+        self._Folder = Folder
         self._Comment = ""
         self._Prefix = ""
         self._ImagesToRecord = 0
@@ -286,7 +286,7 @@ class CameraControl(QtCore.QThread):
         self.Sig_GiveImage = threading.Event()
         self.Sig_GiveImage.clear()
         # image recorder
-        self.ImageRecorder = ImageRecorder()
+        self.ImageRecorder = ImageRecorder(Folder=parent.Settings.get('recording', 'default folder'))
 
     def get_Cameras(self):
         """return list of available cameras"""
@@ -379,7 +379,6 @@ class CameraControl(QtCore.QThread):
         sensor_modes = self.picam2.sensor_modes
         raw_modes = []
         for sensor_mode in sensor_modes:
-            print(f'DBG: {sensor_mode=}')  # FIXME
             # sensor_mode is dict
             # it must have key "format" (usually a packed data format) and can have
             # "unpacked" (unpacked data format)
@@ -515,20 +514,22 @@ class CameraControl(QtCore.QThread):
             # need a camera stop/start when something has changed on camera configuration
             if self.CameraSettings.is_newMode or self.needs_Restarts:
                 if self.picam2.started:
-                    self.parent.log_Info(f'Stopping camera for deeper reconfiguration.')
+                    #self.parent.log_Info(f'Stopping camera for deeper reconfiguration.')
                     self.picam2.stop_()
                 # change of DoFastExposure needs a configuration change
                 self.CameraSettings.reset_newMode()
+                print('DBG: setze Mode')  # FIXME
                 self.reconfigure_Camera(RawMode=self.CameraSettings.RawMode, DoFastExposure=DoFastExposure)
             # changing exposure time or analogue gain can be done with camera running
             if self.CameraSettings.is_newControls:
                 # change camera controls
                 self.CameraSettings.reset_newControls()
+                print(f'DBG: setze Controls: {self.CameraSettings.camera_controls}')  # FIXME
                 self.picam2.set_controls(self.CameraSettings.camera_controls)
             # start camera if not already running
             if not self.picam2.started:
                 self.picam2.start()
-                self.parent.log_Info(f'Camera started.')
+                #self.parent.log_Info(f'Camera started.')
             # last chance to exit or abort before doing exposure
             if self.Sig_ActionExit.is_set():
                 # exit exposure loop
@@ -551,7 +552,7 @@ class CameraControl(QtCore.QThread):
                 time.sleep(PollingPeriod_s)
             # get frame and its metadata
             (array, ), metadata = self.picam2.wait(job)
-            self.parent.log_Info('got exposed frame')
+            #self.parent.log_Info('got exposed frame')
             # last chance to exit or abort before sending frame
             if self.Sig_ActionExit.is_set():
                 # exit exposure loop
