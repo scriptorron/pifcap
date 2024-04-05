@@ -6,6 +6,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import os
 import os.path
+import numpy as np
 import pyqtgraph as pg
 
 import pifcap_ui
@@ -95,6 +96,7 @@ class MainWin(QtWidgets.QMainWindow):
         # camera
         self.Cam = camera.CameraControl(parent=self)
         self.Cam.sigImage.connect(self.on_Image)
+        self.Cam.sigRecordingFinished.connect(self.on_pushButton_StopRec_clicked)
         print('DBG: __init__ Sig_GiveImage.set')  # FIXME
         self.Cam.Sig_GiveImage.set()
         self.ui.comboBox_Camera.addItems(self.Cam.get_Cameras())
@@ -237,7 +239,7 @@ class MainWin(QtWidgets.QMainWindow):
         if format[0] == "S":
             # Bayer pattern format
             BayerPattern = format[1:5]
-            BayerPattern = self.parent.config.get("driver", "force_BayerOrder", fallback=BayerPattern)
+            # FIXME: BayerPattern = self.parent.config.get("driver", "force_BayerOrder", fallback=BayerPattern)
             bit_depth = int(format[5:])
         else:
             # mono format
@@ -260,16 +262,14 @@ class MainWin(QtWidgets.QMainWindow):
             # mono format
             img = array
         else:
-            Hier weiter machen!
             BayerChannels = {
-                1: {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},  # GBRG
-                2: {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},  # GBRG
-                3: {"B": (0, 0), "G1": (0, 1), "G2": (1, 0), "R": (1, 1)},  # BGGR
+                "GBRG": {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},
+                "BGGR": {"B": (0, 0), "G1": (0, 1), "G2": (1, 0), "R": (1, 1)},
             }[BayerPattern]
-            imgR = imgBayer[BayerChannels["R"][0]::2, BayerChannels["R"][1]::2]
-            imgG1 = imgBayer[BayerChannels["G1"][0]::2, BayerChannels["G1"][1]::2]
-            imgG2 = imgBayer[BayerChannels["G2"][0]::2, BayerChannels["G2"][1]::2]
-            imgB = imgBayer[BayerChannels["B"][0]::2, BayerChannels["B"][1]::2]
+            imgR = array[BayerChannels["R"][0]::2, BayerChannels["R"][1]::2]
+            imgG1 = array[BayerChannels["G1"][0]::2, BayerChannels["G1"][1]::2]
+            imgG2 = array[BayerChannels["G2"][0]::2, BayerChannels["G2"][1]::2]
+            imgB = array[BayerChannels["B"][0]::2, BayerChannels["B"][1]::2]
             RawPreviewMode = self.ui.comboBox_RawPreviewMode.currentText()
             if RawPreviewMode == "luminance":
                 img = (0.2126 * imgR + 0.7152 * (imgG1 + imgG2) / 2 + 0.0722 * imgB + 0.5).astype(int)
@@ -293,6 +293,7 @@ class MainWin(QtWidgets.QMainWindow):
         if self.ui.checkBox_PreviewFlipV.isChecked():
             img = np.fliplr(img)
         # show preview image
+        print(f'img shape: {img.shape}')  # FIXME
         self.ui.ImageView_Preview.setImage(img, autoLevels=False,
                                             autoHistogramRange=False,
                                             #levelMode="rgb",

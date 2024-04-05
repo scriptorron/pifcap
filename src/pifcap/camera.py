@@ -15,6 +15,7 @@ from PyQt5 import QtCore
 
 from picamera2 import Picamera2
 from libcamera import controls, Rectangle
+import pifcap_image
 
 
 class CameraSettings:
@@ -199,75 +200,12 @@ class CameraSettings:
         return str(self)
 
 
-class ImageRecorder:
-    def __init__(self, Folder):
-        self._Folder = Folder
-        self._Comment = ""
-        self._Prefix = ""
-        self._ImagesToRecord = 0
-        self._ImagesRecorded = 0
-        self._Record = False
-        self._SettingsLock = QtCore.QMutex()
-        self._Ext = ".pfc"
-
-    def set_RecordingSettings(self, Folder, Prefix, Comment, ImagesToRecord):
-        self._SettingsLock.lock()
-        self._Folder = Folder
-        self._Prefix = Prefix
-        self._Comment = Comment
-        self._ImagesToRecord = ImagesToRecord
-        self._SettingsLock.unlock()
-
-    def Recording(self, Record):
-        self._SettingsLock.lock()
-        self._Record = Record
-        if Record:
-            self._ImagesRecorded = 0
-        self._SettingsLock.unlock()
-
-    def _mk_Image(self, array, metadata, format):
-        self._SettingsLock.lock()
-        Img = {
-            "array": array,
-            "format": format,
-            "metadata": metadata,
-            "comment": self._Comment
-        }
-        self._SettingsLock.unlock()
-        return Img
-
-    def _estimate_FileSize(self, Img):
-        return len(pickle.dumps(Img))
-
-    def on_Image(self, array, metadata, format):
-        Img = self._mk_Image(array=array, metadata=metadata, format=format)
-        self._SettingsLock.lock()
-        Record = self._Record
-        ImagesRemain = self._ImagesToRecord - self._ImagesRecorded
-        Folder = self._Folder
-        self._SettingsLock.unlock()
-        if Record and (ImagesRemain > 0):
-            TimeStamp = datetime.datetime.now().strftime("%y%m%dT%H%M%S%f")[:16]
-            self._SettingsLock.lock()
-            FileName = os.path.join(Folder, f'{self._Prefix}-{TimeStamp}{self._Ext}')
-            self._ImagesRecorded += 1
-            self._SettingsLock.unlock()
-            with open(FileName, "wb") as fh:
-                pickle.dump(Img, fh)
-        disc_total, disc_used, disc_free = shutil.disk_usage(Folder)
-        disc_free_images = disc_free // self._estimate_FileSize(Img)
-        return {
-            "ImagesRecorded": self._ImagesRecorded,
-            "disc_free": disc_free,
-            "disc_free_images": disc_free_images,
-        }
-
-
 class CameraControl(QtCore.QThread):
     """camera control and exposure thread
     """
 
     sigImage = QtCore.pyqtSignal(dict)
+    sigRecordingFinished = QtCore.pyqtSignal()
 
     def __init__(self, parent):
         super().__init__(parent=parent)
@@ -288,7 +226,14 @@ class CameraControl(QtCore.QThread):
         print('DBG: __init__ Sig_GiveImage.clear')  # FIXME
         self.Sig_GiveImage.clear()
         # image recorder
-        self.ImageRecorder = ImageRecorder(Folder=parent.Settings.get('recording', 'default folder'))
+        self._Folder = parent.Settings.get('recording', 'default folder')
+        self._Comment = ""
+        self._Prefix = ""
+        self._ImagesToRecord = 0
+        self._ImagesRecorded = 0
+        self._Record = False
+        self._SettingsLock = QtCore.QMutex()
+        self._Ext = ".pfc"
 
     def get_Cameras(self):
         """return list of available cameras"""
@@ -494,10 +439,19 @@ class CameraControl(QtCore.QThread):
             self.parent.log_Info(f'Frame metadata: {metadata}')
 
     def set_RecordingSettings(self, Folder, Prefix, Comment, ImagesToRecord):
-        self.ImageRecorder.set_RecordingSettings(Folder=Folder, Prefix=Prefix, Comment=Comment, ImagesToRecord=ImagesToRecord)
+        self._SettingsLock.lock()
+        self._Folder = Folder
+        self._Prefix = Prefix
+        self._Comment = Comment
+        self._ImagesToRecord = ImagesToRecord
+        self._SettingsLock.unlock()
 
     def Recording(self, Record):
-        self.ImageRecorder.Recording(Record)
+        self._SettingsLock.lock()
+        self._Record = Record
+        if Record:
+            self._ImagesRecorded = 0
+        self._SettingsLock.unlock()
 
     def run(self):
         """exposure loop
@@ -571,23 +525,47 @@ class CameraControl(QtCore.QThread):
                     'AnalogueGain', 'ScalerCrop', 'ExposureTime'
                 ]
             }
-            RecordingInfos = self.ImageRecorder.on_Image(
+            self.on_Image(
                 array=array, metadata=metadata, 
                 format=self.picam2.camera_configuration()["raw"]["format"]
             )
-            # send preview image to GUI
-            if self.Sig_GiveImage.is_set():
-                self.sigImage.emit({
-                    "array": array,
-                    "format": self.picam2.camera_configuration()["raw"]["format"],
-                    "metadata": metadata,
-                    "RecordingInfos": RecordingInfos,
-                })
-                print('DBG: Sig_GiveImage.clear')  # FIXME
-                self.Sig_GiveImage.clear()
 
 
     def on_CaptureFinished(self, Job):
         """callback function for capture done
         """
         self.Sig_CaptureDone.set()
+
+    def on_Image(self, array, metadata, format):
+        self._SettingsLock.lock()
+        Img = pifcap_image.Image(array=array, metadata=metadata, format=format, comment=self._Comment)
+        Record = self._Record
+        ImagesRemain = self._ImagesToRecord - self._ImagesRecorded
+        Folder = self._Folder
+        self._SettingsLock.unlock()
+        if Record and (ImagesRemain > 0):
+            TimeStamp = datetime.datetime.now().strftime("%y%m%dT%H%M%S%f")[:16]
+            self._SettingsLock.lock()
+            FileName = os.path.join(Folder, f'{self._Prefix}-{TimeStamp}{self._Ext}')
+            self._ImagesRecorded += 1
+            if self._ImagesRecorded >= self._ImagesToRecord:
+                self.sigRecordingFinished.emit()
+                self._Record = False
+            self._SettingsLock.unlock()
+            Img.save(filename=FileName)
+        disc_total, disc_used, disc_free = shutil.disk_usage(Folder)
+        disc_free_images = disc_free // Img.estimate_FileSize()
+        # send preview image to GUI
+        if self.Sig_GiveImage.is_set():
+            self.sigImage.emit({
+                "array": array,
+                "format": self.picam2.camera_configuration()["raw"]["format"],
+                "metadata": metadata,
+                "RecordingInfos": {
+                    "ImagesRecorded": self._ImagesRecorded,
+                    "disc_free": disc_free,
+                    "disc_free_images": disc_free_images,
+                },
+            })
+            print('DBG: Sig_GiveImage.clear')  # FIXME
+            self.Sig_GiveImage.clear()
