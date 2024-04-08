@@ -105,6 +105,7 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.lineEdit_FileNamePrefix.textChanged.connect(self.on_RecordingSettingsChanged)
         self.ui.spinBox_nImagesToRecord.valueChanged.connect(self.on_RecordingSettingsChanged)
         self.ui.doubleSpinBox_TimeLapse.valueChanged.connect(self.on_RecordingSettingsChanged)
+        self.ui.comboBox_FrameType.valueChanged.connect(self.on_RecordingSettingsChanged)  # FIXME: add to ui! (Light, Bias, Dark, Flat)
         # preview image
         self.Img = None
 
@@ -206,6 +207,7 @@ class MainWin(QtWidgets.QMainWindow):
             Prefix=self.ui.lineEdit_FileNamePrefix.text(),
             Comment=self.ui.lineEdit_ImageComment.text(),
             ImagesToRecord=self.ui.spinBox_nImagesToRecord.value(),
+            FrameType=self.ui.comboBox_FrameType.currentText(),
         )
 
     @QtCore.pyqtSlot(dict)

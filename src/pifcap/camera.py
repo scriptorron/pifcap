@@ -116,6 +116,13 @@ class CameraSettings:
         return g
 
     @property
+    def Binning(self):
+        self._AccessLock.lock()
+        b = self._RawModes[self._selected_RawMode_idx]["binning"]
+        self._AccessLock.unlock()
+        return b
+
+    @property
     def ExposureTime(self):
         self._AccessLock.lock()
         t = self._camera_controls["ExposureTime"] / 1e6
@@ -229,6 +236,7 @@ class CameraControl(QtCore.QThread):
         self._Folder = parent.Settings.get('recording', 'default folder')
         self._Comment = ""
         self._Prefix = ""
+        self._FrameType = "Light"
         self._ImagesToRecord = 0
         self._ImagesRecorded = 0
         self._Record = False
@@ -438,12 +446,13 @@ class CameraControl(QtCore.QThread):
                 self.parent.log_Info(f'Frame format: {format}, shape: {array.shape} {array.dtype}')
             self.parent.log_Info(f'Frame metadata: {metadata}')
 
-    def set_RecordingSettings(self, Folder, Prefix, Comment, ImagesToRecord):
+    def set_RecordingSettings(self, Folder, Prefix, Comment, ImagesToRecord, FrameType):
         self._SettingsLock.lock()
         self._Folder = Folder
         self._Prefix = Prefix
         self._Comment = Comment
         self._ImagesToRecord = ImagesToRecord
+        self._FrameType = FrameType
         self._SettingsLock.unlock()
 
     def Recording(self, Record):
@@ -508,6 +517,7 @@ class CameraControl(QtCore.QThread):
                 time.sleep(PollingPeriod_s)
             # get frame and its metadata
             (array, ), metadata = self.picam2.wait(job)
+            DateEnd = datetime.datetime.now(datetime.UTC)
             #self.parent.log_Info('got exposed frame')
             # last chance to exit or abort before sending frame
             if self.Sig_ActionExit.is_set():
@@ -525,6 +535,11 @@ class CameraControl(QtCore.QThread):
                     'AnalogueGain', 'ScalerCrop', 'ExposureTime'
                 ]
             }
+            metadata["DateEnd"] = DateEnd
+            metadata["FrameType"] = self._FrameType
+            metadata["CameraModel"] = self.CamProps["Model"]
+            metadata["UnitCellSize"] = self.CamProps["UnitCellSize"]
+            metadata["Binning"] = self.CameraSettings.Binning
             self.on_Image(
                 array=array, metadata=metadata, 
                 format=self.picam2.camera_configuration()["raw"]["format"]
