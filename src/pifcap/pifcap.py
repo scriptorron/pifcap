@@ -83,6 +83,7 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle(__title__)
         self.ui.plainTextEdit_Log.setMaximumBlockCount(100)
+        self.ui.pushButton_Settings.clicked.connect(self.on_Settings_clicked)
         #
         self.ui.ImageView_Preview.setLevels(0, 255)
         self.ui.ImageView_Preview.ui.roiBtn.hide()
@@ -105,7 +106,7 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.lineEdit_FileNamePrefix.textChanged.connect(self.on_RecordingSettingsChanged)
         self.ui.spinBox_nImagesToRecord.valueChanged.connect(self.on_RecordingSettingsChanged)
         self.ui.doubleSpinBox_TimeLapse.valueChanged.connect(self.on_RecordingSettingsChanged)
-        self.ui.comboBox_FrameType.valueChanged.connect(self.on_RecordingSettingsChanged)  # FIXME: add to ui! (Light, Bias, Dark, Flat)
+        self.ui.comboBox_FrameType.currentIndexChanged.connect(self.on_RecordingSettingsChanged)
         # preview image
         self.Img = None
 
@@ -141,6 +142,9 @@ class MainWin(QtWidgets.QMainWindow):
         #self.Settings.save_QSettings()  # FIXME: activate this!
         # proceed with close
         event.accept()
+
+    def on_Settings_clicked(self):
+        self.Settings.show()
 
     @QtCore.pyqtSlot()
     def on_pushButton_ConnectDisconnect_clicked(self):
@@ -305,8 +309,7 @@ class MainWin(QtWidgets.QMainWindow):
         if self.ui.checkBox_Saturation.isChecked():
             sat = np.zeros((img.shape[0], img.shape[1], 4), dtype=int)
             sat[:, :, 0] = 1  # pure red, full transparent
-            satLim = (2**bit_depth) * self.Settings.get('saturation limit')
-            # FIXME: what about mono images?
+            satLim = (2**bit_depth) * self.Settings.get('saturation limit') / 100
             if BayerPattern is None:
                 # mono image
                 is_sat = img > satLim

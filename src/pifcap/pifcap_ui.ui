@@ -109,7 +109,7 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>354</width>
+                <width>367</width>
                 <height>691</height>
                </rect>
               </property>
@@ -126,6 +126,13 @@
                <property name="bottomMargin">
                 <number>0</number>
                </property>
+               <item>
+                <widget class="QPushButton" name="pushButton_Settings">
+                 <property name="text">
+                  <string>program settings</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QGroupBox" name="groupBox_3">
                  <property name="title">
@@ -157,16 +164,6 @@
                   <string>Camera Settings</string>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_2">
-                  <item row="1" column="0">
-                   <widget class="QLabel" name="label_5">
-                    <property name="text">
-                     <string>gain:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="1">
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_Gain"/>
-                  </item>
                   <item row="2" column="0">
                    <widget class="QLabel" name="label_6">
                     <property name="text">
@@ -193,15 +190,25 @@
                     </property>
                    </widget>
                   </item>
+                  <item row="1" column="1">
+                   <widget class="QDoubleSpinBox" name="doubleSpinBox_Gain"/>
+                  </item>
+                  <item row="0" column="0" colspan="4">
+                   <widget class="QComboBox" name="comboBox_RawMode"/>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_5">
+                    <property name="text">
+                     <string>gain:</string>
+                    </property>
+                   </widget>
+                  </item>
                   <item row="2" column="2">
-                   <widget class="QPushButton" name="pushButton_OptimizeExposure">
+                   <widget class="QCheckBox" name="checkBox_OptimizeExposure">
                     <property name="text">
                      <string>optimize</string>
                     </property>
                    </widget>
-                  </item>
-                  <item row="0" column="0" colspan="3">
-                   <widget class="QComboBox" name="comboBox_RawMode"/>
                   </item>
                  </layout>
                 </widget>
@@ -250,19 +257,6 @@
                     </item>
                    </widget>
                   </item>
-                  <item row="1" column="2">
-                   <widget class="QCheckBox" name="checkBox_Saturation">
-                    <property name="enabled">
-                     <bool>true</bool>
-                    </property>
-                    <property name="text">
-                     <string>saturation</string>
-                    </property>
-                    <property name="checked">
-                     <bool>true</bool>
-                    </property>
-                   </widget>
-                  </item>
                   <item row="1" column="0">
                    <widget class="QComboBox" name="comboBox_RawPreviewMode">
                     <property name="enabled">
@@ -295,6 +289,19 @@
                     </item>
                    </widget>
                   </item>
+                  <item row="1" column="1" colspan="2">
+                   <widget class="QCheckBox" name="checkBox_Saturation">
+                    <property name="enabled">
+                     <bool>true</bool>
+                    </property>
+                    <property name="text">
+                     <string>saturation</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
                  </layout>
                 </widget>
                </item>
@@ -304,6 +311,44 @@
                   <string>Recording</string>
                  </property>
                  <layout class="QGridLayout" name="gridLayout">
+                  <item row="0" column="2">
+                   <widget class="QLabel" name="label_3">
+                    <property name="text">
+                     <string>Prefix:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="2" colspan="3">
+                   <widget class="QLabel" name="label_RecordedImageCounter">
+                    <property name="text">
+                     <string>0 images saved</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QLabel" name="label_2">
+                    <property name="text">
+                     <string>Comment:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QLabel" name="label_4">
+                    <property name="text">
+                     <string># Images:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="5" colspan="2">
+                   <widget class="QPushButton" name="pushButton_StopRec">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>Stop</string>
+                    </property>
+                   </widget>
+                  </item>
                   <item row="0" column="0" colspan="2">
                    <widget class="QPushButton" name="pushButton_Folder">
                     <property name="text">
@@ -311,41 +356,11 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="2" column="1" colspan="3">
-                   <widget class="QSpinBox" name="spinBox_nImagesToRecord">
-                    <property name="maximumSize">
-                     <size>
-                      <width>70</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="minimum">
-                     <number>1</number>
-                    </property>
-                    <property name="maximum">
-                     <number>999999</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="1" colspan="6">
-                   <widget class="QLineEdit" name="lineEdit_ImageComment"/>
-                  </item>
-                  <item row="2" column="0">
-                   <widget class="QLabel" name="label_4">
-                    <property name="text">
-                     <string># Images:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="0">
-                   <widget class="QLabel" name="label_2">
-                    <property name="text">
-                     <string>Comment:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="5">
+                  <item row="3" column="5">
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_TimeLapse">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                       <horstretch>0</horstretch>
@@ -372,52 +387,81 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="2" column="4">
-                   <widget class="QLabel" name="label">
-                    <property name="text">
-                     <string>every</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="4" column="0" colspan="2">
-                   <widget class="QPushButton" name="pushButton_StartRec">
-                    <property name="text">
-                     <string>Rec</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="3" column="0" colspan="7">
+                  <item row="4" column="0" colspan="7">
                    <widget class="QLabel" name="label_RecordingInfos">
                     <property name="text">
                      <string/>
                     </property>
                    </widget>
                   </item>
-                  <item row="0" column="2">
-                   <widget class="QLabel" name="label_3">
+                  <item row="5" column="0" colspan="2">
+                   <widget class="QPushButton" name="pushButton_StartRec">
                     <property name="text">
-                     <string>Prefix:</string>
+                     <string>Rec</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="4">
+                   <widget class="QLabel" name="label">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>every</string>
                     </property>
                    </widget>
                   </item>
                   <item row="0" column="3" colspan="4">
                    <widget class="QLineEdit" name="lineEdit_FileNamePrefix"/>
                   </item>
-                  <item row="4" column="5" colspan="2">
-                   <widget class="QPushButton" name="pushButton_StopRec">
-                    <property name="enabled">
-                     <bool>false</bool>
+                  <item row="2" column="1" colspan="6">
+                   <widget class="QLineEdit" name="lineEdit_ImageComment"/>
+                  </item>
+                  <item row="3" column="1" colspan="3">
+                   <widget class="QSpinBox" name="spinBox_nImagesToRecord">
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
                     </property>
-                    <property name="text">
-                     <string>Stop</string>
+                    <property name="minimum">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <number>999999</number>
                     </property>
                    </widget>
                   </item>
-                  <item row="4" column="2" colspan="3">
-                   <widget class="QLabel" name="label_RecordedImageCounter">
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_7">
                     <property name="text">
-                     <string>0 images saved</string>
+                     <string>Frame type:</string>
                     </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1" colspan="6">
+                   <widget class="QComboBox" name="comboBox_FrameType">
+                    <item>
+                     <property name="text">
+                      <string>Light</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Dark</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Flat</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Bias</string>
+                     </property>
+                    </item>
                    </widget>
                   </item>
                  </layout>

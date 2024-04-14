@@ -91,7 +91,7 @@ def convert(input_filename, remove, skip_existing):
         hdu.header["comment"] = img["comment"]
         hdul = fits.HDUList([hdu])
         # save FITS
-        hdul.writeto(output_filename)
+        hdul.writeto(output_filename, overwrite=True)
         # remove input if requested
         if remove:
             os.remove(input_filename)
@@ -111,8 +111,8 @@ def main():
                         help='number of parallel running conversion jobs (default: 1)')
     parser.add_argument('-v', '--verbose', action="store_true",
                         help='verbose messages')
-    parser.add_argument('files', metavar="path", default='*.pifcap',
-                        help='files to convert; accepts wildcards (default "*.pifcap")')
+    parser.add_argument('files', metavar="path", default='*.pfc',
+                        help='files to convert; accepts "?", "*" and character ranges like "[a-z]" (default "*.pfc")')
     args = parser.parse_args()
     # file lists
     pending_files = list()
@@ -164,6 +164,7 @@ def main():
         # non-demon: finished
         if not args.demon:
             break
+    print()
 
 
 if __name__ == '__main__':

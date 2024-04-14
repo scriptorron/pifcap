@@ -1,3 +1,4 @@
+.DEFAULT_GOAL := all
 
 SRC_DIR = ./src/pifcap
 PYUIC5 = pyuic5
