@@ -18,8 +18,20 @@ def convert(input_filename, remove, skip_existing):
     output_filename = input_filename.rsplit(".", maxsplit=1)[0] + ".fits"
     if not(skip_existing and os.path.isfile(output_filename)):
         # convert
-        with open(input_filename, "rb") as fh:
-            img = pickle.load(fh)
+        retrials = 20
+        while True:
+            try:
+                with open(input_filename, "rb") as fh:
+                    img = pickle.load(fh)
+            except EOFError:
+                retrials -= 1
+                if retrials > 0:
+                    time.sleep(0.1)
+                else:
+                    print(f'ERROR: Can not open {input_filename}', file=sys.stderr)
+                    return input_filename
+            else:
+                break
         array = img["array"]
         format = img["format"]
         metadata = img["metadata"]
@@ -114,6 +126,8 @@ def main():
     parser.add_argument('files', metavar="path", default='*.pfc',
                         help='files to convert; accepts "?", "*" and character ranges like "[a-z]" (default "*.pfc")')
     args = parser.parse_args()
+    if args.demon:
+        print("Demon mode. Exit with CTRL+C.")
     # file lists
     pending_files = list()
     pending_processes = list()
