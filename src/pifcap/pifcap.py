@@ -12,6 +12,7 @@ import pyqtgraph as pg
 import pifcap_ui
 import camera
 import settings
+import autoexposure
 
 __author__ = "Ronald Schreiber"
 __copyright__ = "Copyright 2024"
@@ -35,38 +36,10 @@ class MainWin(QtWidgets.QMainWindow):
         # settings
         DefaultSettings = [
             {'name': 'saturation limit', 'type': 'int', 'value': 90, 'limits': [0, 100], 'suffix': ' %',
-             'tip': 'mark saturationexposure when above % of full-scale',
+             'tip': 'mark saturated pixel when above % of full-scale',
             },
-            {'name': 'automatic exposure', 'type': 'group', 'children': [
-                {
-                    'name': 'target exposure', 'type': 'int', 'value': 80, 'limits': [1, 100], 'suffix': ' %',
-                    'tip': 'exposure target in % of full-scale',
-                },
-                {
-                    'name': 'allowed overexposed pixel', 'type': 'float', 'value': 1.0, 'limits': [0, 100], 'suffix': ' %',
-                    'tip': '% of pixels allowed to be overexposed (for instance defective pixel)',
-                },
-            ]},
-            {'name': 'camera hardware', 'type': 'group', 'children': [
-                {
-                    'name': 'do hardware specific adjustments', 'type': 'bool', 'value': True,
-                    'tip': 'do adjustments for specific camera hardware',
-                },
-                {
-                    'name': 'force pixel size', 'type': 'bool', 'value': False, 'children': [
-                        {
-                            'name': 'X size', 'type': 'float', 'value': 1.0, 'suffix': ' µm', 'limits': [0.0, 10000.0],
-                        },
-                        {
-                            'name': 'Y size', 'type': 'float', 'value': 1.0, 'suffix': ' µm', 'limits': [0.0, 10000.0],
-                        },
-                    ]
-                },
-                {
-                    'name': 'force camera restarts', 'type': 'list', 'values': ['auto', 'yes', 'no'], 'value': 'auto',
-                    'tip': 'force camera restart after each exposure',
-                },
-            ]},
+            autoexposure.settings,
+            camera.settings,
             {'name': 'recording', 'type': 'group', 'children': [
                 {
                     'name': 'default folder', 'type': 'str', 'value': os.path.join(os.path.expanduser("~"), "Pictures"),
@@ -85,12 +58,12 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.plainTextEdit_Log.setMaximumBlockCount(100)
         self.ui.pushButton_Settings.clicked.connect(self.on_Settings_clicked)
         #
-        self.ui.ImageView_Preview.setLevels(0, 255)
+        self.ui.ImageView_Preview.setLevels(0, 2**16 - 1)
         self.ui.ImageView_Preview.ui.roiBtn.hide()
         self.ui.ImageView_Preview.ui.menuBtn.hide()
         # saturated pixel highlight
         self.SaturatedPixelImage = pg.ImageItem()
-        self.SaturatedPixelImage.setZValue(65000)  # TODO: make this dependent on setting
+        self.SaturatedPixelImage.setZValue(65000)
         self.ui.ImageView_Preview.addItem(self.SaturatedPixelImage)
         #
         self.ImageFolder = self.Settings.get('recording', 'default folder')
@@ -109,6 +82,8 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.comboBox_FrameType.currentIndexChanged.connect(self.on_RecordingSettingsChanged)
         # preview image
         self.Img = None
+        # exposure time optimization
+        self.AutoExposure = autoexposure.AutoExposure()
 
     def add_LogMessage(self, Msg, Severity="INFO"):
         if Severity=="ERROR":
@@ -214,6 +189,11 @@ class MainWin(QtWidgets.QMainWindow):
             FrameType=self.ui.comboBox_FrameType.currentText(),
         )
 
+    @QtCore.pyqtSlot("bool")
+    def on_checkBox_OptimizeExposure_stateChanged(self, state):
+        if state:
+            self.AutoExposure.init_optimize()
+
     @QtCore.pyqtSlot(dict)
     def on_Image(self, Img):
         print('DBG: GUI on_Image')
@@ -260,6 +240,20 @@ class MainWin(QtWidgets.QMainWindow):
         # remove 0- or garbage-filled columns # TODO implement this?
         #true_size = self.present_CameraSettings.RawMode["true_size"]
         #array = array[0:true_size[1], 0:true_size[0]]
+        # exposure time optimization
+        if self.ui.checkBox_OptimizeExposure.isChecked():
+            finished, newExposureTime = self.AutoExposure.do_optimize(
+                array=array,
+                ExposureTime=self.Img["metadata"]["ExposureTime"]/1e6,
+                n_bits=bit_depth,
+                MinExposureTime=self.ui.doubleSpinBox_ExposureTime.minimum(),
+                MaxExposureTime=self.ui.doubleSpinBox_ExposureTime.maximum()
+            )
+            if finished:
+                self.ui.checkBox_OptimizeExposure.setChecked(False)
+            else:
+                self.ui.doubleSpinBox_ExposureTime.setValue(newExposureTime)
+        # color channels
         imgR = None
         imgG1 = None
         imgG2 = None

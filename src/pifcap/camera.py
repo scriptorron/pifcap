@@ -17,6 +17,27 @@ from picamera2 import Picamera2
 from libcamera import controls, Rectangle
 import pifcap_image
 
+settings = {'name': 'camera hardware', 'type': 'group', 'children': [
+    {
+        'name': 'do hardware specific adjustments', 'type': 'bool', 'value': True,
+        'tip': 'do adjustments for specific camera hardware',
+    },
+    {
+        'name': 'force pixel size', 'type': 'bool', 'value': False, 'children': [
+        {
+            'name': 'X size', 'type': 'float', 'value': 1.0, 'suffix': ' µm', 'limits': [0.0, 10000.0],
+        },
+        {
+            'name': 'Y size', 'type': 'float', 'value': 1.0, 'suffix': ' µm', 'limits': [0.0, 10000.0],
+        },
+    ]
+    },
+    {
+        'name': 'force camera restarts', 'type': 'list', 'values': ['auto', 'yes', 'no'], 'value': 'auto',
+        'tip': 'force camera restart after each exposure',
+    },
+]}
+
 
 class CameraSettings:
     """exposure settings
