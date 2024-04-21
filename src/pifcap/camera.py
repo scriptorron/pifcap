@@ -603,5 +603,4 @@ class CameraControl(QtCore.QThread):
                     "disc_free_images": disc_free_images,
                 },
             })
-            print('DBG: Sig_GiveImage.clear')  # FIXME
             self.Sig_GiveImage.clear()

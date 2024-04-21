@@ -35,7 +35,7 @@ class MainWin(QtWidgets.QMainWindow):
         super(MainWin, self).__init__()
         # settings
         DefaultSettings = [
-            {'name': 'saturation limit', 'type': 'int', 'value': 90, 'limits': [0, 100], 'suffix': ' %',
+            {'name': 'saturation limit', 'type': 'int', 'value': 95, 'limits': [0, 100], 'suffix': ' %',
              'tip': 'mark saturated pixel when above % of full-scale',
             },
             autoexposure.settings,
@@ -57,6 +57,9 @@ class MainWin(QtWidgets.QMainWindow):
         self.setWindowTitle(__title__)
         self.ui.plainTextEdit_Log.setMaximumBlockCount(100)
         self.ui.pushButton_Settings.clicked.connect(self.on_Settings_clicked)
+        self.ui.groupBox_CameraSettings.setEnabled(False)
+        self.ui.pushButton_StartRec.setEnabled(False)
+        self.ui.comboBox_Camera.setEnabled(True)
         #
         self.ui.ImageView_Preview.setLevels(0, 2**16 - 1)
         self.ui.ImageView_Preview.ui.roiBtn.hide()
@@ -71,7 +74,6 @@ class MainWin(QtWidgets.QMainWindow):
         self.Cam = camera.CameraControl(parent=self)
         self.Cam.sigImage.connect(self.on_Image)
         self.Cam.sigRecordingFinished.connect(self.on_pushButton_StopRec_clicked)
-        print('DBG: __init__ Sig_GiveImage.set')  # FIXME
         self.Cam.Sig_GiveImage.set()
         self.ui.comboBox_Camera.addItems(self.Cam.get_Cameras())
         # recording settings
@@ -83,7 +85,7 @@ class MainWin(QtWidgets.QMainWindow):
         # preview image
         self.Img = None
         # exposure time optimization
-        self.AutoExposure = autoexposure.AutoExposure()
+        self.AutoExposure = autoexposure.AutoExposure(Settings=self.Settings)
 
     def add_LogMessage(self, Msg, Severity="INFO"):
         if Severity=="ERROR":
@@ -124,15 +126,10 @@ class MainWin(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def on_pushButton_ConnectDisconnect_clicked(self):
         if self.Cam.is_Open():
-            print('DBG: vor Cam.closeCamera')  # FIXME
             self.Cam.closeCamera()
-            print('DBG: vor setText')  # FIXME
             self.ui.pushButton_ConnectDisconnect.setText("connect")
-            print('DBG: vor RawMode.clear')  # FIXME
             #self.ui.comboBox_RawMode.clear()
-            print('DBG: vor CameraSettings.setEnabled')  # FIXME
             self.ui.groupBox_CameraSettings.setEnabled(False)
-            print('DBG: vor StartRec.setEnabled')  # FIXME
             self.ui.pushButton_StartRec.setEnabled(False)
             self.ui.comboBox_Camera.setEnabled(True)
         else:
@@ -189,14 +186,14 @@ class MainWin(QtWidgets.QMainWindow):
             FrameType=self.ui.comboBox_FrameType.currentText(),
         )
 
-    @QtCore.pyqtSlot("bool")
+    @QtCore.pyqtSlot(int)
     def on_checkBox_OptimizeExposure_stateChanged(self, state):
+        print(f'DBG: on_checkBox_OptimizeExposure_stateChanged: {state=}') # FIXME
         if state:
             self.AutoExposure.init_optimize()
 
     @QtCore.pyqtSlot(dict)
     def on_Image(self, Img):
-        print('DBG: GUI on_Image')
         self.ui.label_RecordingInfos.setText(
             f'{Img["RecordingInfos"]["disc_free"]/1024/1024:.0f} MiB (~{Img["RecordingInfos"]["disc_free_images"]} images) free'
         )
@@ -206,11 +203,9 @@ class MainWin(QtWidgets.QMainWindow):
         self.Img = Img
         self.process_Image()
         # TODO: wie wird Aufnahme automatisch gestoppt?
-        print('DBG: start timer')  # FIXME
         QtCore.QTimer.singleShot(100, self.request_NewImage)
 
     def request_NewImage(self):
-        print('DBG: Sig_GiveImage.set')  # FIXME
         self.Cam.Sig_GiveImage.set()
 
     def process_Image(self):
@@ -272,7 +267,7 @@ class MainWin(QtWidgets.QMainWindow):
             imgB = array[BayerChannels["B"][0]::2, BayerChannels["B"][1]::2]
             RawPreviewMode = self.ui.comboBox_RawPreviewMode.currentText()
             if RawPreviewMode == "luminance":
-                img = (0.2126 * imgR + 0.7152 * (imgG1 + imgG2) / 2 + 0.0722 * imgB + 0.5).astype(int)
+                img = (0.2126 * imgR + 0.7152 / 2 * imgG1 + 0.7152 / 2 * imgG2 + 0.0722 * imgB).astype(int)
             elif RawPreviewMode == "red":
                 img = imgR
             elif RawPreviewMode == "green 1":
@@ -285,15 +280,10 @@ class MainWin(QtWidgets.QMainWindow):
                 raise NotImplementedError
         # preview rotation and flip
         Rot = self.ui.comboBox_PreviewRot.currentText()
-        if Rot != "0deg":
-            k = {"90deg": 3, "180deg": 2, "270deg": 1}[Rot]
-            img = np.rot90(img, k=k)
-        if self.ui.checkBox_PreviewFlipH.isChecked():
-            img = np.flipud(img)
-        if self.ui.checkBox_PreviewFlipV.isChecked():
-            img = np.fliplr(img)
+        FlipH = self.ui.checkBox_PreviewFlipH.isChecked()
+        FlipV = self.ui.checkBox_PreviewFlipV.isChecked()
+        img = self.flipRotate_Image(img, Rot, FlipH, FlipV)
         # show preview image
-        print(f'img shape: {img.shape}')  # FIXME
         self.ui.ImageView_Preview.setImage(img, autoLevels=False,
                                             autoHistogramRange=False,
                                             #levelMode="rgb",
@@ -309,10 +299,21 @@ class MainWin(QtWidgets.QMainWindow):
                 is_sat = img > satLim
             else:
                 is_sat = (imgR > satLim) | (imgG1 > satLim) | (imgG2 > satLim) | (imgB > satLim)
+            is_sat = self.flipRotate_Image(is_sat, Rot, FlipH, FlipV)
             sat[:, :, 3] = is_sat * 1  # saturated pixel get intransparent red
             self.SaturatedPixelImage.setImage(sat, levels=[[0, 1], [0, 1], [0, 1], [0, 1]])
         else:
             self.SaturatedPixelImage.clear()
+
+    def flipRotate_Image(self, img, Rot, FlipH, FlipV):
+        if Rot != "0deg":
+            k = {"90deg": 3, "180deg": 2, "270deg": 1}[Rot]
+            img = np.rot90(img, k=k)
+        if FlipH:
+            img = np.fliplr(img)
+        if FlipV:
+            img = np.flipud(img)
+        return img
 
     @QtCore.pyqtSlot()
     def on_pushButton_StartRec_clicked(self):
