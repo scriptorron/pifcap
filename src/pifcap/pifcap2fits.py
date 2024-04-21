@@ -60,7 +60,7 @@ def convert(input_filename, remove, skip_existing):
         hdu = fits.PrimaryHDU(array)
         hdu.header["BZERO"] = (2 ** (bit_pix - 1), "offset data range")
         hdu.header["BSCALE"] = (1, "default scaling factor")
-        hdu.header["ROWORDER"] = ("BOTTOM-UP", "Row order")
+        hdu.header["ROWORDER"] = ("TOP-DOWN", "Row order")
         hdu.header["INSTRUME"] = (metadata["CameraModel"], "CCD Name")
         hdu.header["EXPTIME"] = (metadata["ExposureTime"]/1e6, "[s] Total Exposure Time")
         hdu.header["DATE-OBS"] = (
