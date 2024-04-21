@@ -538,7 +538,7 @@ class CameraControl(QtCore.QThread):
                 time.sleep(PollingPeriod_s)
             # get frame and its metadata
             (array, ), metadata = self.picam2.wait(job)
-            DateEnd = datetime.datetime.now(datetime.UTC)
+            DateEnd = datetime.datetime.now(datetime.timezone.utc)
             #self.parent.log_Info('got exposed frame')
             # last chance to exit or abort before sending frame
             if self.Sig_ActionExit.is_set():
