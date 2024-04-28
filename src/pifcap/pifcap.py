@@ -188,7 +188,6 @@ class MainWin(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(int)
     def on_checkBox_OptimizeExposure_stateChanged(self, state):
-        print(f'DBG: on_checkBox_OptimizeExposure_stateChanged: {state=}') # FIXME
         if state:
             self.AutoExposure.init_optimize()
 

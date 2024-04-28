@@ -251,7 +251,6 @@ class CameraControl(QtCore.QThread):
         self.Sig_CaptureDone.clear()
         # handshake with GUI
         self.Sig_GiveImage = threading.Event()
-        print('DBG: __init__ Sig_GiveImage.clear')  # FIXME
         self.Sig_GiveImage.clear()
         # image recorder
         self._Folder = parent.Settings.get('recording', 'default folder')
@@ -504,13 +503,11 @@ class CameraControl(QtCore.QThread):
                     self.picam2.stop_()
                 # change of DoFastExposure needs a configuration change
                 self.CameraSettings.reset_newMode()
-                print('DBG: setze Mode')  # FIXME
                 self.reconfigure_Camera(RawMode=self.CameraSettings.RawMode, DoFastExposure=DoFastExposure)
             # changing exposure time or analogue gain can be done with camera running
             if self.CameraSettings.is_newControls:
                 # change camera controls
                 self.CameraSettings.reset_newControls()
-                print(f'DBG: setze Controls: {self.CameraSettings.camera_controls}')  # FIXME
                 self.picam2.set_controls(self.CameraSettings.camera_controls)
             # start camera if not already running
             if not self.picam2.started:

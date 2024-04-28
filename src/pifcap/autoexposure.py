@@ -31,7 +31,7 @@ class AutoExposure():
         self.init_optimize()
 
     def init_optimize(self):
-        print("DBG: init_optimize") # FIXME
+        #print("DBG: init_optimize")
         self.iteration = 0
 
     def do_optimize(self, array, ExposureTime, n_bits, MinExposureTime, MaxExposureTime):
@@ -54,7 +54,7 @@ class AutoExposure():
                 100 - self.Settings.get('automatic exposure', 'allowed overexposed pixel')
             )
             targetExposure = self.Settings.get('automatic exposure', 'target exposure') / 100 * (2 ** n_bits)
-            print(f'DBG: in do_optimize: {currentExposure=}, {targetExposure=}') # FIXME
+            #print(f'DBG: in do_optimize: {currentExposure=}, {targetExposure=}')
             if currentExposure < targetExposure:
                 if ExposureTime <= 0:
                     newExposureTime = 0.01
@@ -68,7 +68,7 @@ class AutoExposure():
                                        )
             else:
                 n_saturated = (array >= ((2 ** n_bits) - 1)).sum()
-                print(f'DBG: in do_optimize: {n_saturated=}, {self.Settings.get("automatic exposure", "allowed overexposed pixel") / 100 * array.size}') # FIXME
+                #print(f'DBG: in do_optimize: {n_saturated=}, {self.Settings.get("automatic exposure", "allowed overexposed pixel") / 100 * array.size}')
                 if n_saturated > self.Settings.get('automatic exposure', 'allowed overexposed pixel') / 100 * array.size:
                     # overexposed and saturated
                     newExposureTime = ExposureTime / self.Settings.get('automatic exposure', 'saturation rate')
@@ -77,7 +77,7 @@ class AutoExposure():
                                        self.Settings.get('automatic exposure', 'learning rate') *
                                        (ExposureTime * targetExposure / currentExposure - ExposureTime)
                                        )
-        print(f'DBG: in do_optimize: {ExposureTime=}, {newExposureTime=}')  # FIXME
+        #print(f'DBG: in do_optimize: {ExposureTime=}, {newExposureTime=}')
         return finished, min(max(newExposureTime, MinExposureTime), MaxExposureTime)
 
 
