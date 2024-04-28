@@ -92,13 +92,17 @@ class MainWin(QtWidgets.QMainWindow):
             Html = '<font color="red">ERROR: %s</font>' % Msg
         elif Severity=="WARN":
             Html = '<font color="orange">WARN: %s</font>' % Msg
-        elif (Severity=="DEBUG") and self.showDebugMessages:
-            Html = '<font color="yellow">DBG: %s</font>' % Msg
-        else:
+        elif (Severity=="DEBUG"):
+            if self.showDebugMessages:
+                Html = '<font color="yellow">DBG: %s</font>' % Msg
+            else:
+                return
+        else: # INFO
             #Html = '<font color="black">%s</font>' % Msg
             Html = Msg
         self.ui.plainTextEdit_Log.appendHtml(Html)
         self.ui.statusbar.showMessage(Msg)
+        self.ui.plainTextEdit_Log.ensureCursorVisible()
 
     def log_Error(self, Msg):
         self.add_LogMessage(Msg, "ERROR")
@@ -145,7 +149,6 @@ class MainWin(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(int)
     def on_comboBox_RawMode_currentIndexChanged(self, idx):
-        print(f'DBG: on_compoBox_RawMode_currentIndexChanged {idx}')
         if idx >= 0:
             self.Cam.CameraSettings.set_RawModeFromIdx(idx)
             self.ui.doubleSpinBox_Gain.setMaximum(self.Cam.CameraSettings.MaxGain)
@@ -158,12 +161,10 @@ class MainWin(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(float)
     def on_doubleSpinBox_ExposureTime_valueChanged(self, t):
-        print(f'DBG: on_doubleSpinBox_ExposureTime_valueChanged {t}')
         self.Cam.CameraSettings.ExposureTime = t
 
     @QtCore.pyqtSlot(float)
     def on_doubleSpinBox_Gain_valueChanged(self, g):
-        print(f'DBG: on_doubleSpinBox_Gain_valueChanged {g}')
         self.Cam.CameraSettings.Gain = g
 
     @QtCore.pyqtSlot()
