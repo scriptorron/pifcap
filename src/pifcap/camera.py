@@ -15,7 +15,7 @@ from PyQt5 import QtCore
 
 from picamera2 import Picamera2
 from libcamera import controls, Rectangle
-import pifcap_image
+from . import pifcap_image
 
 settings = {'name': 'camera hardware', 'type': 'group', 'children': [
     {

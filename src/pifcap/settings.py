@@ -6,7 +6,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import pyqtgraph.parametertree
 
-import settings_ui
+from . import settings_ui
 
 
 def name2key(name):

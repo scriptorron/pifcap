@@ -9,10 +9,10 @@ import os.path
 import numpy as np
 import pyqtgraph as pg
 
-import pifcap_ui
-import camera
-import settings
-import autoexposure
+from . import pifcap_ui
+from . import camera
+from . import settings
+from . import autoexposure
 
 __author__ = "Ronald Schreiber"
 __copyright__ = "Copyright 2024"
