@@ -30,29 +30,43 @@ for your camera with:
   Something with your libcamera or kernel driver installation will be wrong if this does not work.
 - The Python packages `PyQt5`, `picamera2` and `numpy` must be installed. Typically they are already installed. If not you can install them with:
 ```commandline
-sudo apt-get install python3-picamera2 p
+sudo apt-get install python3-picamera2 python3-pyqt5 python3-numpy
 ```
 
-To install `pifcap`in your system run
+The Raspberry PI OS requires a virtual environment to install non-system Python packages. Trying to install `pifcap` without a virtual environment will fail with `error: externally-managed-environment`. 
+
+Run the following on a command line to install `pifcap`in a virtual environment called `venv_pifcap`:
 ```commandline
-sudo pip3 install pifcap
+python3 -m venv --system-site-packages ~/venv_pifcap
+source ~/venv_pifcap/bin/activate
+pip install --upgrade pip
+pip install pifcap
+```
 
 ## Uninstall
-For uninstalling `pifcap` do:
+To remove `pifcap` from your Pi just delete the virtual environment:
 ```commandline
-sudo pip3 uninstall pifcap
+rm -rf ~/venv_pifcap
 ```
 
 ## Running
+
+Before using `pifcap` you need to activate the virtual environment in the command window:
+```commandline
+source ~/venv_pifcap/bin/activate
+```
+
 You can start graphical user interface of the capture program with:
 ```commandline
 pifcap
 ```
+
+
 Images are stored in a proprietary format to minimize CPU load during capture. Conversion of the collected images to FITS format can be done with the command line program `pifcap2fits`. Run `pifcap2fits -h` to get help for the command options. For instance to convert all `pfc` files in the current directory to FITS do
 ```commandline
 pifcap2fits "*.pfc"
 ```
-Different to linux commands the file name specifier must be quoted.
+Different to linux commands the file name specifier must be quoted!
 
 
 
