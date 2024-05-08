@@ -228,9 +228,11 @@ class MainWin(QtWidgets.QMainWindow):
             bit_depth = int(format[1:])
         # left adjust if needed
         if bit_depth > 8:
-            array = array.view(np.uint16)
+            bit_pix = 16
+            array = array.view(np.uint16) * (2 ** (bit_pix - bit_depth))
         else:
-            array = array.view(np.uint8)
+            bit_pix = 8
+            array = array.view(np.uint8) * (2 ** (bit_pix - bit_depth))
         #
         # remove 0- or garbage-filled columns # TODO implement this?
         #true_size = self.present_CameraSettings.RawMode["true_size"]
@@ -240,7 +242,7 @@ class MainWin(QtWidgets.QMainWindow):
             finished, newExposureTime = self.AutoExposure.do_optimize(
                 array=array,
                 ExposureTime=self.Img["metadata"]["ExposureTime"]/1e6,
-                n_bits=bit_depth,
+                n_bits=bit_pix,
                 MinExposureTime=self.ui.doubleSpinBox_ExposureTime.minimum(),
                 MaxExposureTime=self.ui.doubleSpinBox_ExposureTime.maximum()
             )
@@ -293,7 +295,7 @@ class MainWin(QtWidgets.QMainWindow):
         if self.ui.checkBox_Saturation.isChecked():
             sat = np.zeros((img.shape[0], img.shape[1], 4), dtype=int)
             sat[:, :, 0] = 1  # pure red, full transparent
-            satLim = (2**bit_depth) * self.Settings.get('saturation limit') / 100
+            satLim = (2**bit_pix) * self.Settings.get('saturation limit') / 100
             if BayerPattern is None:
                 # mono image
                 is_sat = img > satLim

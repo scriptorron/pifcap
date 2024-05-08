@@ -52,10 +52,10 @@ def convert(input_filename, remove, skip_existing):
         # left adjust if needed
         if bit_depth > 8:
             bit_pix = 16
-            array = array.view(np.uint16)
+            array = array.view(np.uint16) * (2 ** (bit_pix - bit_depth))
         else:
             bit_pix = 8
-            array = array.view(np.uint8)
+            array = array.view(np.uint8) * (2 ** (bit_pix - bit_depth))
         # convert to FITS
         hdu = fits.PrimaryHDU(array)
         hdu.header["BZERO"] = (2 ** (bit_pix - 1), "offset data range")
