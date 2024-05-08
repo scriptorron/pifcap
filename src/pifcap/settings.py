@@ -54,7 +54,9 @@ class SettingsDialog(QtWidgets.QDialog):
                     _traverseTree(QSettings, p)
                     QSettings.endGroup()
                 else:
-                    p.setValue(QSettings.value(name2key(p.name()), p.defaultValue()))
+                    # older pyqtgraph does not know p.defaultValue()
+                    #p.setValue(QSettings.value(name2key(p.name()), p.defaultValue()))
+                    p.setValue(QSettings.value(name2key(p.name()), p.value()))
         #
         QSettings = QtCore.QSettings()
         _traverseTree(QSettings, self.Params)

@@ -1,3 +1,6 @@
+1.0.6
+- compatibility with older pyqtgraph
+
 1.0.5
 - fixed installation issues
 
