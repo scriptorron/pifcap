@@ -14,6 +14,7 @@ guipy: $(SRC_DIR)/pifcap_ui.py $(SRC_DIR)/settings_ui.py
 
 build: guipy $(SRC_DIR)/*.py setup.cfg
 	-rm -rf dist
+	-rm -rf src/pifcap.egg-info
 	python3 -m build
 	twine check dist/*
 
